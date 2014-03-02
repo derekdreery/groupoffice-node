@@ -9,8 +9,7 @@
     "express": "3.4.8",
     "jade": "*",
     "jadeify": "*",
-    "nib": "*",
-    "gulp": "~3.5.1"
+    "nib": "*"
   },
   "description": "A node app which provides login for employees to enter HR info.",
   "main": "app.js",
