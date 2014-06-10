@@ -1,3 +1,7 @@
+/**
+ * TODO not all stuff plays nice with modules yet (there are none so it's ok :) )
+ */
+
 var path = require('path')
   , gulp = require('gulp')
   , concat = require('gulp-concat')
@@ -5,35 +9,63 @@ var path = require('path')
   , nodemon = require('gulp-nodemon')
   , jshint = require('gulp-jshint')
   , stylus = require('gulp-stylus')
-  , browserify = require('gulp-browserify')
-  , gutil = require('gulp-util')
+  , jade = require('gulp-jade')
+  , uglify = require('gulp-uglify')
+  , replace = require('gulp-replace')
+  , gutil = require('gulp-util');
 
 var paths = {
-	server: {
-		app_in: __dirname + '/go/server/main.js',
-		js_in: [__dirname + '/go/server/**/*.js', __dirname + '/go/modules/*/server/**/*.js'],
-		js_and_jade_in: [__dirname + '/go/server/**/*.{js,jade}', __dirname + '/go/modules/*/server/**/*.{js,jade}'],
-		js_out: 'server.js'
+	core: {
+		server: {
+			js: __dirname + '/go/server/**/*.js',
+			js_jade: __dirname + '/go/server/**/*.{js,jade}'
+		},
+		client: {
+			stylus: __dirname + '/go/client/stylus/main.styl',
+			jade: __dirname + '/go/client/jade/**/*.jade',
+			partials: __dirname + '/go/client/partials',
+			js: __dirname + '/go/client/js/**/*.js',
+			js_jade: [
+				__dirname + '/go/client/js/**/*.js',
+				__dirname + '/go/client/jade/**/*.jade'
+			]
+		}
 	},
-	client: {
-		stylus_in: [__dirname + '/go/client/stylus/main.styl', __dirname + '/go/modules/*/client/stylus/main.styl'],
-		css_out: 'style.css',
-		app_in: __dirname + '/go/client/js/main.js',
-		js_in: [__dirname + '/go/client/js/**/*.js', __dirname + '/go/modules/*/client/js/**/*.js'],
-		js_and_jade_in: [__dirname + '/go/client/js/**/*.js',
-		                 __dirname + '/go/client/jade/**/*.jade',
-		                 __dirname + '/go/modules/*/client/js/**/*.js',
-		                 __dirname + '/go/modules/*/client/jade/**/*.jade'],
-		js_out: 'client.js'
+	modules: {
+		server: {
+			js: __dirname + '/go/modules/*/server/**/*.js',
+			js_jade: __dirname + '/go/modules/*/server/**/*.{js,jade}'
+		},
+		client: {
+			stylus: __dirname + '/go/modules/*/client/stylus/main.styl',
+			jade: __dirname + '/go/modules/*/client/jade/**/*.jade',
+			js: __dirname + '/go/modules/*/client/js/**/*.js',
+			js_jade: [
+		  	__dirname + '/go/modules/*/client/js/**/*.js',
+				__dirname + '/go/modules/*/client/jade/**/*.jade'
+			]
+		}
 	},
-	go: __dirname + '/go'
-}
+	client_js: 'client.js',
+	app_css: 'app.css',
+	go: __dirname + '/go',
+	main_js: __dirname + '/go/server/main.js',
+	server_js: 'server.js'
+	
+
+};
 
 var lr, node;
 
+/**
+ * Kill any running dev server, and then create another
+ * 
+ * @param {type} node The node server if already running, falsey otherwise
+ * @returns {unresolved} The new node server
+ */
 function devel_server(node) {
 	if(node) node.kill();
-	node = spawn('node', [paths.server.app_in], {stdio: 'inherit'});
+	node = spawn('node', [paths.main_js], {stdio: 'inherit'});
 	node.on('close', function(code) {
 		if (code === 8) {
 			console.log('Error detected, waiting for changes');
@@ -42,10 +74,35 @@ function devel_server(node) {
 	return node;
 }
 
+// Tasks
+// =====
+
+/**
+ * Generate partials from jade templates
+ */
+gulp.task('core.partials', function() {
+	gulp.src(paths.core.client.jade)
+		.pipe(jade({
+			pretty: true
+		}))
+		.pipe(replace(/<!DOCTYPE html>\n/g, ''))
+		.on('error', function(err) {
+			console.log(err.toString());
+			this.emit('end');
+		})
+		.pipe(gulp.dest(paths.core.client.partials));
+});
+
+/**
+ * Fire up the dev server
+ */
 gulp.task('server.js', function() {
 	node = devel_server(node);
 });
 
+/**
+ * Fire up the dev db
+ */
 gulp.task('mongo', function() {
 	var mongo = spawn('mongod', ['--dbpath', __dirname+'/data'], {stdio: 'inherit'});
 	mongo.on('close', function(code) {
@@ -53,46 +110,67 @@ gulp.task('mongo', function() {
 	});
 });
 
+/**
+ * Compile styl to css
+ */
 gulp.task('css', function() {
-	gulp.src(paths.client.stylus_in)
+	gulp.src(paths.core.client.stylus)
 	    .pipe(stylus({
 		    use: ['nib'],
+		    paths: ['bower_components/bootstrap-stylus/stylus/']
 	    }))
-	    .pipe(concat(paths.client.css_out))
-	    .pipe(gulp.dest(paths.go))
+	    .on('error', function() {
+				console.log("Error compiling css: waiting for file changes");
+				this.emit('end');
+	    })
+	    .pipe(concat(paths.app_css))
+	    .pipe(gulp.dest(paths.go));
 });
 
+/**
+ * Concat all clientside code
+ */
 gulp.task('client.js', function() {
-	gulp.src(paths.client.app_in)
-	    .pipe(browserify({
-		    transform: ['jadeify'],
-		    extensions: ['.jade']
-		  }))
-		  .on('error', gutil.log)
-		  .pipe(concat(paths.client.js_out))
-		  .pipe(gulp.dest(paths.go))
+	gulp.src([paths.core.client.js, paths.modules.client.js])
+		  .pipe(concat(paths.client_js))
+		  .pipe(gulp.dest(paths.go));
 });
 
+/**
+ * Lint the serverside js
+ */
 gulp.task('server.lint', function() {
-	gulp.src(paths.server.js_in)
+	gulp.src([paths.core.server.js, paths.modules.server.js])
 	    .pipe(jshint())
 	    .pipe(jshint.reporter('jshint-stylish'));
 });
 
+/**
+ * Lint the clientside js
+ */
 gulp.task('client.lint', function() {
-	gulp.src(paths.client.js_in)
+	gulp.src([paths.core.client.js, paths.modules.client.js])
 	    .pipe(jshint())
 	    .pipe(jshint.reporter('jshint-stylish'));
 });
 
-gulp.task('develop', ['server.js', 'server.lint', 'client.js', 'client.lint', 'mongo'], function() {
+/**
+ * Fire up all tasks/watches for development
+ */
+gulp.task('develop', [
+	'server.js', 'server.lint', 'client.js', 'client.lint',
+	'css', 'mongo', 'core.partials'
+], function() {
 	//client
-	gulp.watch(paths.client.stylus_in, ['css']);
-	gulp.watch(paths.client.js_and_jade_in, ['client.js', 'client.lint']);
+	gulp.watch([paths.core.client.stylus, paths.modules.client.stylus], ['css']);
+	gulp.watch([paths.core.client.jade, paths.modules.client.jade], ['core.partials']);
+	gulp.watch([paths.core.client.js, paths.modules.client.js], ['client.js', 'client.lint']);
 	//server
-	gulp.watch(paths.server.js_and_jade_in, ['server.js', 'server.lint']);
+	gulp.watch([paths.core.server.js_jade, paths.modules.server.js_jade], ['server.js', 'server.lint']);
 });
           
-
+/**
+ * dummy
+ */
 gulp.task('default', function() {
 });

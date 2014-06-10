@@ -1,2 +1,6 @@
 node_modules
+bower_components
 data
+go/style.css
+go/client.js
+go/server.js

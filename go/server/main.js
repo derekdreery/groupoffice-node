@@ -1,5 +1,10 @@
-var groupoffice = require('./app.js'),
-    app = groupoffice({debug: true});
+var Fiber = require('fibers'),
+    app_factory = require('./app.js');
 
-app.listen(process.env.port || 3002);
+Fiber(function() {
+	var app = app_factory(),
+			port = process.env.port || 3002;
+	app.listen(port);
+	console.log("Server listening on " + port);
+}).run();
 

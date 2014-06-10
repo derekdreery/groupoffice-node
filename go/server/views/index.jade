@@ -1,7 +1,29 @@
-extends layout
+doctype html
+html(lang='en')
+	head
+		title Group Office Node
+		style.
+			[ng-cloak] {
+				display: none;
+			}
+		script(type='text/javascript')
+			include ../../../bower_components/angular-loader/angular-loader.js
+		script(type='text/javascript')
+			include ../../../bower_components/script.js/dist/script.js
 
-block head
-	title Group Office Node
+		script(type='text/javascript').
+			$script([
+				'lib/jquery.js',
+				'lib/angular.js',
+				'lib/angular-route.js',
+				'lib/angular-ui.js',
+				'lib/angular-resource.js',
+				'core/app.js'
+			], function() {
+				angular.bootstrap(document, ['go']);
+			});
+		link(rel='stylesheet', href='lib/angular-ui.css')
+		link(rel='stylesheet', href='core/app.css')
 
-block scripts
-	script(type='text/javascript', src='/app')
+	body(ng-cloak)
+		div(ng-view)

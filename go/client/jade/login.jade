@@ -1,0 +1,11 @@
+doctype html
+.container
+	form
+		.form-group
+			label Login
+			input.form-control(type='text', ng-model='username')
+		.form-group
+			label Password
+			input.form-control(type='password', ng-model='password')
+		button.btn.btn-default(ng-click='login()') Submit
+			

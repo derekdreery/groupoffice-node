@@ -1,18 +1,19 @@
 {
-  "name": "groupoffice-node",
+  "name": "group-office-node",
   "version": "0.0.1",
   "private": true,
   "scripts": {
     "start": "node server/build/app.min.js"
   },
   "dependencies": {
-    "express": "3.4.8",
+    "express": "4.*",
     "jade": "*",
     "jadeify": "*",
-    "nib": "*"
+    "nib": "*",
+    "morgan": "^1.0.0"
   },
-  "description": "A node app which provides login for employees to enter HR info.",
-  "main": "app.js",
+  "description": "A node rewrite of groupoffice",
+  "main": "./",
   "devDependencies": {
     "connect-livereload": "~0.3.2",
     "tiny-lr": "0.0.5",
@@ -25,11 +26,25 @@
     "backbone": "^1.1.2",
     "gulp-concat": "^2.1.7",
     "gulp-util": "^2.2.14",
-    "jquery": "^2.1.0"
+    "jquery": "^2.1.0",
+    "gulp-uglify": "^0.2.1",
+    "nib": "^1.0.2",
+    "gulp-jade": "^0.4.2",
+    "gulp-replace": "^0.2.0"
   },
   "keywords": [
-    "groupoffice"
+    "groupoffice",
+    "node",
+    "nosql"
   ],
-  "author": "Richard Dodd",
-  "license": "EULA"
+  "author": {
+    "name": "Richard Dodd",
+    "email": "richard.dodd@theitpartnership.co"
+  },
+  "license": {
+    "type": "mit"
+  },
+  "bugs": {
+    "url": "null"
+  }
 }

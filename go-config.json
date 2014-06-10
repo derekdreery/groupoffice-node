@@ -1,0 +1,8 @@
+{
+	"author": "Richard Dodd <richard.dodd@theitpartnership.co>",
+	"db": {
+		"host": "localhost",
+		"db": "go"
+	},
+	"debug": true
+}
